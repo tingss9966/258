@@ -1,48 +1,62 @@
-module part3(LEDR, HEX0, HEX1,HEX2,HEX3, HEX4, HEX5, SW. KEY);
+module part3(LEDR, HEX0, HEX1,HEX2,HEX3, HEX4, HEX5, SW, KEY);
 	input [9:0] SW;
 	output [7:0] LEDR;
-	output HEX0, HEX1,HEX2,HEX3, HEX4, HEX5;
+	output [6:0]HEX0, HEX1,HEX2,HEX3, HEX4, HEX5;
 	input [2:0] KEY;
-	reg out;
-	wire [7:0] wire1, wire2;
+	reg [7:0]out;
+	wire [7:0] wire1, wire2, wire3;
 	wire [6:0] connect1, connect2, connect3, connect4;
+	
+	adder addone(.out(wire1[7:0]),
+					.a(SW[7:4]),
+					.b(4'b0001));
+	
+	adder addB(.out(wire2[7:0]),
+				.a(SW[7:4]),
+			   .b(SW[3:0]));
+				
+	xoror case3(.x(SW[7:4]),
+			.y(SW[3:0]),
+         .out(wire3[7:0]));
+			
+	mux zero(.out(HEX0[6:0]),
+				.in(SW[3:0]));
+				
+	mux two(.out(HEX2[6:0]),
+		.in(SW[7:4]));
+		
+	mux one(.out(HEX1[6:0]),
+		.in(4'b0000));
+		
+	mux three(.out(HEX3[6:0]),
+		.in(4'b0000));
+		
+	mux four(.out(HEX4[6:0]),
+				.in(LEDR[3:0]));
+				
+	mux five(.out(HEX5[6:0]),
+				.in(LEDR[7:4]));
+		
 	always @(*)
 	begin
-		case (KEY)
-			3'b000: out = FA addone(.out(wire1[7:0]),
-											.a(SW[7:4]),
-											.b(4'b0001));
-			3'b001: out = FA addone(.out(LEDR[7:0]),
-											.a(SW[7:4]),
-											.b(SW[3:0]));
+		case (KEY[2:0])
+			3'b000: out =  {3'b000, wire1};
+			3'b001: out = {3'b000, wire2};
 			3'b010: out = SW[3:0] + SW[7:4];
-			3'b011: out = xoror(.x(SW[7:4]),
-									  .y(SW[3:0]),
-									  .out(wire2[7:0]));
-			3'b100: out = {7'b0000000,| SW[7:0]};
+			3'b011: out = wire3;
+			3'b100: out = {7'b0000000, | SW[7:0]};
 			3'b101: out = {SW[7:4],SW[3:0]};
 			default: out = {8'b00000000};
 		endcase
 	end		
 	assign LEDR = out;
-	assign HEX0 = mux(.out(connect1),
-							.in(SW[3:0]));
-	assign HEX2 = mux(.out(connect2),
-							.in(SW[7:4]));
-	assign HEX1 = mux(.out(connect3),
-							.in(4'b0000));
-	assign HEX3 = mux(.out(connect4),
-							.in(4'b0000));
-	assign HEX4 = out[3:0];
-	assign HEX5 = out[7:4];
 endmodule
 
 module xoror(x,y,out);
 	input [3:0] x;
 	input [3:0] y;
-	output [7:0] out;
-	assign [0:3] out = x ^ y;
-	assign [7:4] out = x | y;
+	output [4:0] out;
+	assign out = {x^y,x|y};
 endmodule
 
 module adder(out, a, b);
@@ -73,13 +87,9 @@ module adder(out, a, b);
 		.cin(c3),
 		.s(out[3]),
 		.cout(out[4]));
-		
-	out[5] = 0;
-	out[6] = 0;
-	out[7] = 0;
 endmodule
 
-module FA(A,B,cin,s,cout);
+module take(A,B,cin,s,cout);
 	input A,B,cin;
 	output s,cout;
 	assign s = A^B^cin;
